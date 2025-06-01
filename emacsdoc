@@ -1,0 +1,61 @@
+#!/bin/bash
+
+set -e
+
+OS=$(uname -s)
+ARCH=$(uname -m)
+
+case "$OS" in
+    Linux*)
+	OS=linux
+	;;
+    Darwin*)
+	OS=darwin
+	;;
+    Windows*)
+	OS=windows
+	;;
+esac
+
+function install_asdf() {    
+    local arch=$ARCH
+    case "$arch" in
+	x86_64)
+	    arch=amd64
+	    ;;
+	i686)
+	    arch=386
+	    ;;
+    esac
+
+    if [ "$OS" == darwin && "$arch" == 386 ]; then
+	echo "macOS does not support 32bit version"
+	exit 1
+    fi
+
+    curl -OL https://github.com/asdf-vm/asdf/releases/download/v0.17.0/asdf-v0.17.0-$OS-$arch.tar.gz
+    tar -xf asdf-v0.1.7.0-$OS-$arch.tar.gz
+    mkdir -p ~/.local/bin
+    mv asdf ~/.local/bin
+}
+
+
+## Install themes
+solarized_theme_dir="$HOME/.emacs.d/elpa/emacs-color-theme-solarized"
+if [ ! -d $solarized_theme_dir ]; then
+    echo "Installing themes..."
+    (cd $HOME/.emacs.d/elpa && git clone https://github.com/sellout/emacs-color-theme-solarized.git $solaized_theme_dir)
+fi
+
+## Setup asdf version managers
+if ! command -v asdf 2>&1 >/dev/null; then
+    echo "Setting up asdf version manager..."
+    install_asdf
+fi    
+
+## Install language servers
+# install Go dependencies
+echo "Setting up Go tooling and dependencies..."
+go install golang.org/x/tools/cmd/goimports@latest
+go install golang.org/x/tools/gopls@latest
+asdf reshim golang
