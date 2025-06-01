@@ -96,12 +96,18 @@
 ;;; Setup theme
 ;;;
 
+(use-package doom-themes
+  :config
+  (setq doom-themes-enable-bold t)
+  (setq doom-themes-enable-italic t))
+
 ;; Load custom theme paths
 (dolist (path n-custom-theme-paths)
   (add-to-list 'custom-theme-load-path (file-name-concat n-user-dir path)))
 
 ;; Load theme
-(load-theme 'solarized t)
+;; (load-theme 'solarized t)
+(load-theme 'doom-spacegrey t)
 
 
 ;;;
@@ -174,6 +180,8 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("ae426fc51c58ade49774264c17e666ea7f681d8cae62570630539be3d06fd964" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" default))
  '(package-selected-packages nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
