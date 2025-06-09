@@ -15,6 +15,9 @@
 (setq custom-backup-directory
       (file-name-concat n-user-dir "backup"))
 
+(setq custom-auto-save-directory
+      (file-name-concat n-user-dir "auto-save-list"))
+
 
 ;;;
 ;;; General settings
@@ -24,6 +27,24 @@
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+
+;; Maximize on startup
+(defun maximize-frame ()
+  "Maximizes the active frame in Windows"
+  (interactive)
+  (when (eq system-type 'windows-nt)
+	(w32-send-sys-command 61488)))
+(add-hook 'window-setup-hook 'maximize-frame t)
+
+;; Disable splash screen
+(setq inhibit-startup-screen t)
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (let* ((buffer-text (get-buffer-create "*Startup*")))
+              (calendar)
+              (goto-char 0)
+              (toggle-truncate-lines)
+              (delete-other-windows))))
 
 ;; Global tab setting
 (setq-default c-basic-offset 4)
@@ -37,12 +58,31 @@
 (setq byte-compile-warnings '(not docstrings))
 
 ;; Change GUI font
-(set-frame-font "Menlo 14" nil t)
+(defun font-available-p (font-name)
+  (find-font (font-spec :name font-name)))
+
+(cond
+ ((font-available-p "Iosevka NFM")
+  (set-frame-font "Iosevka NFM 12" nil t))
+ ((font-available-p "Inconsolata Nerd Font Mono")
+  (set-frame-font "Inconsolata Nerd Font Mono 12" nil t))
+ ((font-available-p "FiraMono Nerd Font")
+  (set-frame-font "FiraMono Nerd Font 12" nil t)))
 
 ;; Move backup files to one location
 (unless (file-exists-p custom-backup-directory)
   (make-directory custom-backup-directory t))
-(setq backup-directory-alist '(custom-backup-directory))
+(setq backup-directory-alist `((".*" . ,custom-backup-directory)))
+
+(unless (file-exists-p custom-auto-save-directory)
+  (make-directory custom-auto-save-directory t))
+(setq auto-save-file-name-transforms
+      `((".*" ,custom-auto-save-directory t)))
+
+(setq delete-old-version t
+      kept-new-version 2
+      kept-old-version 2
+      version-control t)
 
 
 ;;;
@@ -74,6 +114,11 @@
   (require 'use-package-ensure)
   (setq use-package-always-ensure t))
 
+;; Load env variables from shell
+(use-package exec-path-from-shell
+  :when (memq window-system '(mac ns x))
+  :config
+  (exec-path-from-shell-initialize))
 
 ;;;
 ;;; Better completion
@@ -92,15 +137,6 @@
   (completion-category-overrides '((file (styles partial-completion)))))
 
 
-;;;
-;;; Setup theme
-;;;
-
-(use-package doom-themes
-  :config
-  (setq doom-themes-enable-bold t)
-  (setq doom-themes-enable-italic t))
-
 ;; Load custom theme paths
 (dolist (path n-custom-theme-paths)
   (add-to-list 'custom-theme-load-path (file-name-concat n-user-dir path)))
@@ -108,6 +144,21 @@
 ;; Load theme
 ;; (load-theme 'solarized t)
 (load-theme 'doom-spacegrey t)
+
+
+;;
+;; Startup screen
+;;
+
+(use-package enlight
+  :custom
+  (enlight-content
+   (concat
+    (propertize "MENU" 'face 'highlight)
+    "\n"
+    (enlight-menu
+     '(("Other"
+        ("Projects" project-switch-project "p")))))))
 
 
 ;;;
@@ -146,14 +197,21 @@
   (interactive)
   (eglot-code-actions nil nil "source.organizeImports" t))
 
+(defun eglot-go-format()
+  (pcase (file-name-extension (buffer-file-name))
+	("go" (eglot-format))))
+
 (defun custom-go-settings()
   (eglot-ensure)
   (setq-default c-basic-offset 4
 		tab-width 4
 		indent-tabs-mode t
 		go-ts-mode-indent-offset 4)
-  (add-hook 'after-save-hook 'eglot-format)
+  (add-hook 'after-save-hook 'eglot-go-format)
   (add-hook 'before-save-hook 'eglot-go-imports nil t))
+
+;; Go template file extension
+(add-to-list 'auto-mode-alist '("\\.tmpl\\'" . go-ts-mode))
 
 ;; YAML settings
 (defun custom-yaml-settings()
