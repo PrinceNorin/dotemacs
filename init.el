@@ -28,6 +28,9 @@
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
 
+;; Disable bell sound
+(setq visible-bell 1)
+
 ;; Maximize on startup
 (defun maximize-frame ()
   "Maximizes the active frame in Windows"
